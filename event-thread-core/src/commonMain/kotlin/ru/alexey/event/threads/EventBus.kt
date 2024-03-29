@@ -93,25 +93,22 @@ class EventBus(
         invoke(T::class, action)
     }
 
-    fun<T: Event> external(clazz: KClass<T>, block: suspend EventThreadActionBuilder<T>.(T) -> Unit) {
-        subscribers.getOrPut(clazz) {
-            object : EventThread<T>() {
-                override fun close() {
-                    unsubscribe(clazz)
-                }
-
-                init {
-                    this@EventBus.invoke(clazz) { this }
-                }
-            }
-        }.invoke(EventType.external) {
-            action { event ->
-                val t = this as EventThreadActionBuilder<T>
-                with(t) {
-                    block(event as T)
-                }
+    fun<T: Event> external(clazz: KClass<T>, block: suspend (T) -> Unit) {
+        val eventThread = subscribers.getOrPut(clazz) {
+            EventThreadMetadataBuilder<T>(
+                description = "This thread was created by define external event thread",
+                privacy = Privacy.public
+            ).build().also {
+                this.invoke(clazz) { it }
             }
         }
+
+        (eventThread as EventThread<T>).invoke(
+            EventThreadAction(
+                action = block,
+                type = EventType.external
+            )
+        )
     }
 
     fun collectToEventBus(events: Flow<Event>) {
@@ -121,11 +118,10 @@ class EventBus(
     }
 
     inline fun<reified T: Event> external(
-        noinline action: suspend EventThreadActionBuilder<T>.(T) -> Unit
+        noinline action: suspend (T) -> Unit
     ) = external(T::class, action)
 
     override fun close() {
-        subscribers.values.forEach(EventThread<*>::close)
         coroutineScope.cancel()
     }
 

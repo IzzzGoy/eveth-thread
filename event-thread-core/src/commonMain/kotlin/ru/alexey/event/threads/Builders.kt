@@ -85,6 +85,8 @@ class ConfigBuilder {
 abstract class Scope() : KeyHolder {
 
     abstract val eventBus: EventBus
+    val metadata
+        get() = eventBus.metadata
     protected lateinit var emitters: List<Emitter<out Event>>
     abstract operator fun <T : Any> get(clazz: KClass<T>): Datacontainer<T>?
     inline fun <reified T : Any> resolve(): Datacontainer<T>? = get(T::class)
@@ -97,85 +99,62 @@ abstract class Scope() : KeyHolder {
 
     operator fun plus(event: Event) = eventBus + event
 
+
+    inline fun <reified T : Event> thread(block: EventThreadMetadataBuilder<T>.() -> Unit): EventThread<T> {
+        return EventThreadMetadataBuilder<T>().apply(block).build().also { eventBus { it } }
+    }
+
+    inline fun <reified T : Event> thread(): EventThread<T> {
+        return EventThreadMetadataBuilder<T>().build().also { eventBus { it } }
+    }
+
     @Builder
     inline infix fun <reified T : Event, reified OTHER : Event> EventThread<T>.then(
-        crossinline factory: suspend EventThreadActionBuilder<T>.(T) -> OTHER
+        crossinline factory: suspend (T) -> OTHER
     ): EventThread<T> {
-        invoke(EventType.cascade) {
-            action {
-                eventBus + factory(it)
-            }
+        val action = EventThreadActionBuilder<T>(EventType.cascade) {
+            eventBus + factory(it)
         }
+        invoke(action.build())
         return this
     }
 
     @Builder
     inline fun <reified T : Event, reified TYPE : Any> EventThread<T>.then(
         datacontainer: Datacontainer<TYPE>,
-        crossinline factory: suspend EventThreadActionBuilder<T>.(TYPE, T) -> TYPE
+        crossinline factory: suspend (TYPE, T) -> TYPE
     ): EventThread<T> {
-        invoke(EventType.modification) {
-            action {
-                val new = factory(datacontainer.value, it)
-                datacontainer.update {
-                    new
-                }
+        val action = EventThreadActionBuilder<T>(EventType.modification) {
+            val new = factory(datacontainer.value, it)
+            datacontainer.update {
+                new
             }
         }
+        invoke(action.build())
         return this
     }
 
-
-/*    @Builder
-    inline fun <reified T : Event> eventThread(noinline action: suspend EventBus.(T) -> Unit): EventThread<T> {
-
-        return object : EventThread<T>() {
-            override fun close() {
-                eventBus.unsubscribe<T>()
-            }
-
-            init {
-                val eventBus = eventBus
-                invoke(EventType.consume) {
-                    if (it is T) {
-                        with(eventBus) {
-                            action(it)
-                        }
-                    }
-                }
-                eventBus { this }
-            }
+    @Builder
+    inline infix fun <reified T : Event> EventThread<T>.end(
+        crossinline block: suspend (T) -> Unit
+    ): EventThread<T> {
+        val action = EventThreadActionBuilder<T>(EventType.consume) {
+            block(it)
         }
-    }*/
+        invoke(action.build())
+        return this
+    }
 
+    @Deprecated("Use thread instead", ReplaceWith("thread<T>()"))
     @Builder
     inline fun <reified T : Event> eventThread(): EventThread<T> {
 
-        return object : EventThread<T>() {
-            override fun close() {
-                eventBus.unsubscribe<T>()
-            }
-
-            init {
-                eventBus { this }
-            }
+        return  EventThread<T>(
+            EventMetadata("", Privacy.public)
+        ).also {
+            eventBus { it }
         }
     }
-
-
-
-    //inline fun <reified T : Any> resource() = resource(T::class)
-
-
-
-    /*fun <T: Any> resource(name: String? = null,  clazz: KClass<T>, block: MutableMap<KClass<out Any>, () -> Any>.() -> Unit)
-     = resource(
-         clazz,
-        name ?: clazz.simpleName.orEmpty(),
-        buildMap { apply(block) }
-     )
-    inline fun <reified T : Any> resource(name: String? = null, noinline block: MutableMap<KClass<out Any>, () -> Any>.() -> Unit) =
-        resource(name, T::class, block)*/
 
 }
 

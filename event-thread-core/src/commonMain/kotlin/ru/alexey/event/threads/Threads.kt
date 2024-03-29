@@ -2,49 +2,59 @@ package ru.alexey.event.threads
 
 import ru.alexey.event.threads.utils.Builder
 
-@OptIn(ExperimentalStdlibApi::class)
-abstract class  EventThread<T: Event>: AutoCloseable {
-
+open class EventThread<T: Event>(
+    private val metadata: EventMetadata
+) {
     private val eventThreadActions: MutableList<EventThreadAction<T>> = mutableListOf()
-
 
     val actions: List<suspend (Event) -> Unit>
         get() = eventThreadActions.map { it.action as suspend (Event) -> Unit }
 
-    val eventMetadatas: List<EventMetadata>
-        get() = eventThreadActions.map { EventMetadata(it.description, it.type) }
+    val eventMetadatas: EventThreadInfo
+        get() = EventThreadInfo(metadata, eventThreadActions.map { it.type })
 
-    operator fun invoke(type: EventType, block: EventThreadActionBuilder<T>.() -> Unit) {
+    operator fun invoke(eventThreadAction: EventThreadAction<T>) {
         eventThreadActions.add(
-            EventThreadActionBuilder<T>(type).apply(block).build()
+            eventThreadAction
         )
     }
 }
+
+data class EventThreadInfo(
+    val metadata: EventMetadata,
+    val actions: List<EventType>
+)
 
 enum class EventType {
     consume, cascade, process, modification, external
 }
 
+enum class Privacy {
+    private, public
+}
+
 class EventThreadAction<T: Event>(
-    val type: EventType,
     val action: suspend (T) -> Unit,
-    val description: String
+    val type: EventType
 )
 
 data class EventMetadata(
     val description: String,
-    val type: EventType
+    val privacy: Privacy = Privacy.public
 )
 
-class EventThreadActionBuilder<T: Event>(
-    private val type: EventType,
-) : Builder<EventThreadAction<T>> {
-    private var description: String = ""
-    private var action: suspend (T) -> Unit = {}
+class EventThreadMetadataBuilder<T: Event>(
+    private var description: String = "",
+    private var privacy: Privacy = Privacy.public
+): Builder<EventThread<T>> {
 
-    override fun build(): EventThreadAction<T> {
-        return EventThreadAction(
-            type, action, description
+
+
+    override fun build(): EventThread<T> {
+        return EventThread<T>(
+            EventMetadata(
+                description, privacy
+            )
         )
     }
 
@@ -52,10 +62,22 @@ class EventThreadActionBuilder<T: Event>(
         description = block()
     }
 
-    fun action(block: suspend (T) -> Unit) {
-        action = block
+    fun privacy(privacy: Privacy) {
+        this.privacy = privacy
     }
 }
+
+class EventThreadActionBuilder<T: Event>(
+    private val type: EventType,
+    private val action: suspend (T) -> Unit
+): Builder<EventThreadAction<T>> {
+    override fun build(): EventThreadAction<T> {
+        return EventThreadAction(action, type)
+    }
+}
+
+
+
 
 
 
