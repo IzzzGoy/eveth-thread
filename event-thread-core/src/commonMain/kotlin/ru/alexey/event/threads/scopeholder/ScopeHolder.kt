@@ -2,14 +2,12 @@ package ru.alexey.event.threads.scopeholder
 
 import ru.alexey.event.threads.Event
 import ru.alexey.event.threads.Scope
-import ru.alexey.event.threads.ScopeBuilder
-import ru.alexey.event.threads.scopeBuilder
 import kotlin.reflect.KClass
 
 class ScopeHolder(
-    private val external: Map<KClass<out Event>, List<String>>,
+    val external: Map<KClass<out Event>, List<String>>,
     private val factories: Map<String, () -> Scope>,
-    private val dependencies: Map<String, List<String>> = emptyMap(),
+    val dependencies: Map<String, List<String>> = emptyMap(),
 ) {
 
     private val active: MutableSet<Scope> = mutableSetOf()

@@ -2,9 +2,8 @@ package ru.alexey.event.threads.navgraph
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import ru.alexey.event.threads.ExtendableEvent
+import ru.alexey.event.threads.Privacy
 import ru.alexey.event.threads.datacontainer.datacontainer
 import ru.alexey.event.threads.resources.flowResource
 import ru.alexey.event.threads.resources.invoke
@@ -51,16 +50,19 @@ inline fun <reified PUSH : NavigationDestination> ScopeHolderBuilder.navGraph(
         }
 
         threads {
-            eventThread<PUSH>().then(stack) { stack: List<ReadyScreen>, event ->
+            thread<PUSH> {
                 description {
-                    "Event for navigation to next screen: ${event::class.simpleName} with params ${event.params.keys}"
+                    "Event for navigation to next screen"
                 }
+                privacy(Privacy.public)
+            }.then(stack) { stack: List<ReadyScreen>, event ->
+
                 val screen = navGraph()().screens[event::class]?.invoke()
                     ?: error("Missing screen: $event")
                 screen.checkParams(event.params)
                 stack + ReadyScreen(screen, event.params)
             }
-            eventThread<PopUp>().then(stack) { stack: List<ReadyScreen>, _ ->
+            thread<PopUp>().then(stack) { stack: List<ReadyScreen>, _ ->
                 if (stack.size > 1) {
                     stack.dropLast(1)
                 } else {
@@ -68,7 +70,7 @@ inline fun <reified PUSH : NavigationDestination> ScopeHolderBuilder.navGraph(
                 }
             }
 
-            eventThread<PopToScreen>().then(stack) { stack: List<ReadyScreen>, event ->
+            thread<PopToScreen>().then(stack) { stack: List<ReadyScreen>, event ->
                 if (event.screen == null) {
                     if (stack.size > 1) {
                         stack.dropLast(1)

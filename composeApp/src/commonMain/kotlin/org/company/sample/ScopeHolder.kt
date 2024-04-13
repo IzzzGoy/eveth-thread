@@ -14,13 +14,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.json.Json
 import ru.alexey.event.threads.Event
+import ru.alexey.event.threads.LocalScope
 import ru.alexey.event.threads.LocalScopeHolder
 import ru.alexey.event.threads.StrictEvent
 import ru.alexey.event.threads.cache.cacheJsonResource
-import ru.alexey.event.threads.cache.pathToJSON
 import ru.alexey.event.threads.datacontainer.datacontainer
 import ru.alexey.event.threads.navgraph.NavigationDestination
 import ru.alexey.event.threads.navgraph.PopUp
@@ -29,7 +28,6 @@ import ru.alexey.event.threads.navgraph.widget
 import ru.alexey.event.threads.resources.Parameters
 import ru.alexey.event.threads.resources.invoke
 import ru.alexey.event.threads.resources.observable
-import ru.alexey.event.threads.resources.param
 import ru.alexey.event.threads.resources.resolve
 import ru.alexey.event.threads.resources.resource
 import ru.alexey.event.threads.resources.valueResource
@@ -140,10 +138,11 @@ fun provideScopeHolder() = scopeHolder {
         }
 
         threads {
-            eventThread<SetString>().then(intContainer) { _: String, setString: SetString ->
+            thread<SetString> {
                 description {
                     "Just set string dude :)"
                 }
+            }.then(intContainer) { _: String, setString: SetString ->
                 setString.str
             }
         }

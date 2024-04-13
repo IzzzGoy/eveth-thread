@@ -1,5 +1,6 @@
 package ru.alexey.event.threads
 
+import kotlinx.serialization.Serializable
 import ru.alexey.event.threads.utils.Builder
 
 open class EventThread<T: Event>(
@@ -20,6 +21,7 @@ open class EventThread<T: Event>(
     }
 }
 
+@Serializable
 data class EventThreadInfo(
     val metadata: EventMetadata,
     val actions: List<EventType>
@@ -38,6 +40,7 @@ class EventThreadAction<T: Event>(
     val type: EventType
 )
 
+@Serializable
 data class EventMetadata(
     val description: String,
     val privacy: Privacy = Privacy.public

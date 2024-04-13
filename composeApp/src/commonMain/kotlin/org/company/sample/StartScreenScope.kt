@@ -45,12 +45,14 @@ fun provideStartScreenScope(name: String) = scopeBuilder(name) {
     }
 
     threads {
-        eventThread<SetInt>().then(intDatacontainer) { state: Int, event ->
-            state + event.int
-        }.then {
+        thread<SetInt> {
             description {
                 "Just cool event handler"
             }
+        }.then(intDatacontainer) { state: Int, event ->
+            state + event.int
+        }.then {
+
             Counter
         }
         eventThread<Counter>().then(intDatacontainer) { state: Int, _ ->
