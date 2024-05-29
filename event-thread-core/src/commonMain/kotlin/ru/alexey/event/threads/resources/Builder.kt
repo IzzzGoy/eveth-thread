@@ -24,7 +24,7 @@ inline fun <reified T : Any> observable(noinline block: (Parameters) -> Observab
 
 inline fun <reified T : Any> Parameters.resolve(): T {
     return get(T::class)?.let { it() as T }
-        ?: error("Param type <> missing") //error("Param type <${T::class.qualifiedName}> missing")
+        ?: error("Param type <${T::class.simpleName}> missing") //error("Param type <${T::class.qualifiedName}> missing")
 }
 
 inline fun <reified T : Any> MutableMap<KClass<out Any>, () -> Any>.param(noinline block: () -> T) {

@@ -19,6 +19,7 @@ data class ExternalDependencyMetadata(
 @Serializable
 data class ScopeMetadata(
     val name: String,
+    val description: String,
     val events: List<EventInfo>,
 )
 
@@ -45,7 +46,8 @@ fun ScopeHolder.generateStaticSchema(): ScopeHolderMetadata {
         scopesMetadata = allMetadata.map { (scope, metadata) ->
             ScopeMetadata(
                 name = scope,
-                events = metadata.map { (event, metadata) ->
+                description = metadata.description,
+                events = metadata.eventsMetadata.map { (event, metadata) ->
                     EventInfo(
                         name = event,
                         info = metadata,
@@ -67,7 +69,8 @@ fun ScopeHolder.generateActiveSchema(): ScopeHolderMetadata {
         scopesMetadata = activeMetadata.map { (scope, metadata) ->
             ScopeMetadata(
                 name = scope,
-                events = metadata.map { (event, metadata) ->
+                description = metadata.description,
+                events = metadata.eventsMetadata.map { (event, metadata) ->
                     EventInfo(
                         name = event,
                         info = metadata,

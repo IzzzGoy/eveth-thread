@@ -13,9 +13,9 @@ class ScopeHolder(
     private val active: MutableSet<Scope> = mutableSetOf()
 
     val activeMetadata
-        get() =  active.map { it.key to it.eventBus.metadata }.toMap()
+        get() = active.associate { it.key to it.metadata }
     val allMetadata
-        get() = factories.map { it.key to it.value().eventBus.metadata }.toMap()
+        get() = factories.map { it.key to it.value().metadata }.toMap()
     private fun loadInternal(key: String): Scope? {
         return factories[key]?.let {
             it()

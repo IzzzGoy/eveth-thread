@@ -21,6 +21,7 @@ import ru.alexey.event.threads.LocalScopeHolder
 import ru.alexey.event.threads.StrictEvent
 import ru.alexey.event.threads.cache.cacheJsonResource
 import ru.alexey.event.threads.datacontainer.datacontainer
+import ru.alexey.event.threads.datacontainer.datacontainerKey
 import ru.alexey.event.threads.navgraph.NavigationDestination
 import ru.alexey.event.threads.navgraph.PopUp
 import ru.alexey.event.threads.navgraph.navGraph
@@ -48,6 +49,8 @@ val intResource by observable {
     cacheJsonResource("test", "Test", jsonResource()())
 }
 
+val intDCKey = datacontainerKey(intResource())
+
 val startScreenWidget by widget<String> { it, modifier ->
     Text(it)
     val holder = LocalScopeHolder.current
@@ -60,8 +63,6 @@ val startScreenWidget by widget<String> { it, modifier ->
             Text("Click")
         }
     }
-
-
 }
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -114,7 +115,7 @@ fun provideScopeHolder() = scopeHolder {
         }
 
 
-        val intContainer by datacontainer(intResource()) {
+        val intContainer by datacontainer(intDCKey) {
             coroutineScope {
                 CoroutineScope(Dispatchers.Main)
             }

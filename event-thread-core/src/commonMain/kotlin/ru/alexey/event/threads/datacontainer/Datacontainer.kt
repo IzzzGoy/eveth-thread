@@ -1,6 +1,7 @@
 package ru.alexey.event.threads.datacontainer
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -18,9 +19,10 @@ abstract class RealDataContainer<T>(
 ) : StateFlow<T> by stateFlow, Datacontainer<T>
 
 
+@OptIn(ExperimentalStdlibApi::class)
 inline fun<reified T: Any> ContainerBuilder.realDataContainer(
     flow: StateFlow<T>, scope: CoroutineScope , crossinline innerUpdate: ((T) -> T) -> Unit
-) = object : RealDataContainer<T>(
+): RealDataContainer<T> = object : AutoCloseable, RealDataContainer<T>(
     flow
 ) {
 
@@ -31,6 +33,10 @@ inline fun<reified T: Any> ContainerBuilder.realDataContainer(
     init {
         this@realDataContainer[T::class] = this as Datacontainer<T>
         launchIn(scope)
+    }
+
+    override fun close() {
+        scope.cancel()
     }
 }
 

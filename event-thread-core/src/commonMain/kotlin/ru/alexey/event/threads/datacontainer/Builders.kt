@@ -133,12 +133,41 @@ inline fun<reified T: Any> ScopeBuilder.datacontainer(
     }  else {
         container
     }
-
 }
 
 
+inline fun <reified T : Any> ScopeBuilder.datacontainer(
+    key: DatacontainerKey<T>,
+    crossinline block: DatacontainerBuilder<T>.() -> Unit
+) = ReadOnlyProperty<Any?, Datacontainer<T>> { _, _ ->
+    val container = containerBuilder[key.keyKClass]
+    if (container == null) {
+        var transforms: List<Transform<out Any, T>>
+        var scope: CoroutineScope
+        var watchers: List<(T) -> Unit>
 
-
+        DatacontainerBuilder(key.keyKClass).apply { block() }.build().also {
+            transforms = it.transforms
+            scope = it.coroutineScope
+            watchers = it.watchers
+        }
+        with(containerBuilder) {
+            realDataContainer(
+                transforms.foldAndStateWithProxyAndWatchers(
+                    key.source,
+                    watchers,
+                    scope
+                ), scope
+            ) { it: (T) -> T ->
+                scope.launch {
+                    key.source.update(it)
+                }
+            }
+        }
+    } else {
+        container
+    }
+}
 
 
 data class Transform<Other : Any, T : Any>(
@@ -217,18 +246,4 @@ class DatacontainerBuilder<T : Any>(private val clazz: KClass<T>) {
     fun coroutineScope(block: () -> CoroutineScope) {
         coroutineScope = block()
     }
-
-/*    fun <R : Any> ScopeBuilder.resourceLoad(clazz: KClass<R>) {
-        proxy = resource(clazz) as? ObservableResource<T> ?: error("This resource is not Observable<${clazz.simpleName}>")
-    }*/
-
- /*   @Builder
-    inline fun <reified R : Any> ScopeBuilder.resource() {
-        resourceLoad(R::class)
-    }*/
-
-/*    @Builder
-    fun ScopeBuilder.bindToResource() {
-        proxy = resource(clazz) as? ObservableResource<T> ?: error("This resource is not Observable<${clazz.simpleName}>")
-    }*/
 }
