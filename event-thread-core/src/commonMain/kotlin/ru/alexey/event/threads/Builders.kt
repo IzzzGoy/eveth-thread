@@ -8,10 +8,8 @@ import ru.alexey.event.threads.datacontainer.DatacontainerKey
 import ru.alexey.event.threads.emitter.Emitter
 import ru.alexey.event.threads.emitter.EmittersBuilder
 import ru.alexey.event.threads.resources.Parameters
-import kotlin.properties.ReadOnlyProperty
 import kotlin.random.Random
 import kotlin.reflect.KClass
-import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 
 class ScopeBuilder(
@@ -185,18 +183,19 @@ abstract class Scope : KeyHolder {
 inline fun scopeBuilder(
     keyHolder: KeyHolder? = null,
     noinline block: ScopeBuilder.(Parameters) -> Unit
-): Scope =
+): (Parameters) -> ScopeBuilder =
     scopeBuilder(keyHolder?.key, block)
 
 @Builder
-fun scopeBuilder(name: String? = null, block: ScopeBuilder.(Parameters) -> Unit): Scope {
-    val scope = ScopeBuilder(
-        name ?: Random.Default.nextBytes(132).toString()
-    ).apply {
-        block(emptyMap())
+fun scopeBuilder(
+    name: String? = null,
+    block: ScopeBuilder.(Parameters) -> Unit
+): (Parameters) -> ScopeBuilder {
+    return {
+        ScopeBuilder(
+            name ?: Random.nextBytes(132).toString()
+        ).apply { block(it) }
     }
-
-    return scope.scope
 }
 
 @DslMarker

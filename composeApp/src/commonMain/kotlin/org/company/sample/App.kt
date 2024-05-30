@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import co.touchlab.kermit.Logger
+import io.ktor.http.parameters
 import kotlinx.serialization.encodeToString
 import org.company.sample.theme.AppTheme
 import ru.alexey.event.threads.LocalScope
@@ -17,6 +18,7 @@ import ru.alexey.event.threads.LocalScopeHolder
 import ru.alexey.event.threads.ScopeHolder
 import ru.alexey.event.threads.navgraph.NavGraph
 import ru.alexey.event.threads.resources.invoke
+import ru.alexey.event.threads.scopeWithParams
 import ru.alexey.event.threads.scopeholder.generateActiveSchema
 import ru.alexey.event.threads.scopeholder.generateStaticSchema
 import ru.alexey.event.threads.widget.createWidget
@@ -54,6 +56,9 @@ internal fun App() = AppTheme {
                     it
                 )
             }
+        }
+        scopeWithParams("Global", mapOf(String::class to { "Hello" })) {
+
         }
         NavGraph("Navigation")
     }

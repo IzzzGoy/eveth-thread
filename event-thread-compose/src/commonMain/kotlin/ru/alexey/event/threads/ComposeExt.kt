@@ -5,8 +5,42 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import ru.alexey.event.threads.resources.Parameters
 import ru.alexey.event.threads.scopeholder.ScopeHolder
 import kotlin.reflect.KClass
+
+@Composable
+fun scopeWithParams(
+    name: String,
+    parameters: Parameters? = null,
+    scopeHolder: ScopeHolder? = null,
+    content: @Composable () -> Unit
+) {
+    val holder = scopeHolder ?: LocalScopeHolder.current
+    val counter = LocalScopeCounter.current
+
+    val scope = remember {
+        holder.findOrLoad(name) {
+            parameters ?: emptyMap()
+        }
+    }
+
+    counter.register(name)
+
+
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (counter.unregister(name)) {
+                holder.free(scope.key)
+            }
+        }
+    }
+
+    CompositionLocalProvider(LocalScope provides scope) {
+        content()
+    }
+}
 
 @Composable
 fun scope(name: String, scopeHolder: ScopeHolder? = null, content: @Composable () -> Unit) {

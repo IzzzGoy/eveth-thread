@@ -2,11 +2,14 @@ package ru.alexey.event.threads.scopeholder
 
 import ru.alexey.event.threads.Event
 import ru.alexey.event.threads.Scope
+import ru.alexey.event.threads.ScopeBuilder
+import ru.alexey.event.threads.resources.Parameters
 import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
 
 class ScopeHolder(
     val external: Map<KClass<out Event>, List<String>>,
-    private val factories: Map<String, () -> Scope>,
+    private val factories: Map<String, (Parameters) -> ScopeBuilder>,
     val dependencies: Map<String, List<String>> = emptyMap(),
 ) {
 
@@ -14,14 +17,22 @@ class ScopeHolder(
 
     val activeMetadata
         get() = active.associate { it.key to it.metadata }
-    val allMetadata
-        get() = factories.map { it.key to it.value().metadata }.toMap()
-    private fun loadInternal(key: String): Scope? {
+
+    private fun loadInternal(key: String, params: () -> Parameters = ::emptyMap): Scope? {
         return factories[key]?.let {
-            it()
+            it(params()).scope
         }?.also { scope ->
             active += scope
-            external.forEach { (k, receivers) ->
+            scope.eventBus.external<Event> { event ->
+                external[event::class]
+                    ?.filter { it != scope.key }
+                    ?.forEach { key ->
+                        active
+                            .filter { it.key == key }
+                            .forEach { it + event }
+                    }
+            }
+            /*external.forEach { (k, receivers) ->
                 scope.eventBus.external(k) { event ->
                     active.filter { s ->
                         s.key in receivers && scope.key !in receivers
@@ -29,7 +40,7 @@ class ScopeHolder(
                         it + event
                     }
                 }
-            }
+            }*/
         }?.also {
             dependencies[it.key]?.forEach(::findOrLoad)
         }
@@ -41,6 +52,10 @@ class ScopeHolder(
 
     infix fun load(key: String): Scope? {
         return loadInternal(key)
+    }
+
+    fun load(key: String, params: () -> Parameters): Scope? {
+        return loadInternal(key, params)
     }
 
     infix fun free(keyHolder: KeyHolder) {
@@ -85,6 +100,8 @@ class ScopeHolder(
 
     infix fun find(key: String): Scope? = active.find { it.key == key }
     infix fun findOrLoad(key: String): Scope = find(key) ?: load(key) ?: error("Scope with name: $key not found")
+    fun findOrLoad(key: String, params: () -> Parameters): Scope =
+        find(key) ?: load(key, params) ?: error("Scope with name: $key not found")
 }
 
 

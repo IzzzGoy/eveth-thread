@@ -18,7 +18,7 @@ class EventBus(
     private val watchers: List<suspend (Event) -> Unit>
 ): AutoCloseable {
 
-    private val channel: Channel<Event> = Channel()
+    private val channel: Channel<Event> = Channel(Channel.BUFFERED)
     private val subscribers: MutableMap<KClass<out Event>, EventThread<out Event>> = mutableMapOf()
 
     val metadata
@@ -63,9 +63,11 @@ class EventBus(
                         }
 
                         else -> {
-                            subscribers[event::class]?.actions?.forEach {
-                                launch {
-                                    it(event)
+                            for ((key, value) in subscribers.entries) {
+                                if (key.isInstance(event)) {
+                                    value.actions.forEach {
+                                        it(event)
+                                    }
                                 }
                             }
                         }

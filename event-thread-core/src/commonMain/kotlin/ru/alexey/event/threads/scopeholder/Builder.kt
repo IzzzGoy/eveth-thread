@@ -3,24 +3,34 @@ package ru.alexey.event.threads.scopeholder
 import ru.alexey.event.threads.Event
 import ru.alexey.event.threads.Scope
 import ru.alexey.event.threads.ScopeBuilder
+import ru.alexey.event.threads.resources.Parameters
 import ru.alexey.event.threads.scopeBuilder
 import kotlin.reflect.KClass
 
 class ScopeHolderBuilder {
 
-    private val factories: MutableMap<String, () -> Scope> = mutableMapOf()
+    private val factories: MutableMap<String, (Parameters) -> ScopeBuilder> = mutableMapOf()
     private val external: MutableMap<KClass<out Event>, List<String>> = mutableMapOf()
     private val dependencies: MutableMap<String, List<String>> = mutableMapOf()
 
-    fun scope(key: String, block: (String) -> Scope): String {
-        factories[key] = { block(key) }
+    fun scope(key: String, block: (String, Parameters) -> ScopeBuilder): String {
+        factories[key] = {
+            block(key, it)
+        }
         return key
     }
 
-    fun scope(key: String, block: () -> Scope) : String {
-        factories[key] = block
+    fun scope(key: String, block: (String) -> ((Parameters) -> ScopeBuilder)): String {
+        factories[key] = {
+            block(key)(it)
+        }
         return key
     }
+
+    /*fun scopeWithParams(key: String, block: (Parameters) -> ScopeBuilder) : String {
+        factories[key] = block
+        return key
+    }*/
 
     fun build(): ScopeHolder {
         return ScopeHolder(
@@ -30,11 +40,9 @@ class ScopeHolderBuilder {
         )
     }
 
-    fun scopeEmbedded(key: String, init: ScopeBuilder.() -> Unit) {
-        factories[key] = {
-            scopeBuilder(key) {
-                init()
-            }
+    fun scopeEmbedded(key: String, init: ScopeBuilder.(Parameters) -> Unit) {
+        factories[key] = scopeBuilder(key) {
+            init(it)
         }
     }
 

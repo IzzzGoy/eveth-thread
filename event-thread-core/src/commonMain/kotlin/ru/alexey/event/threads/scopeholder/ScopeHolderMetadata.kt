@@ -43,7 +43,7 @@ fun ScopeHolder.generateStaticSchema(): ScopeHolderMetadata {
         consumedMetadata = external.map { (k, v) ->
             ConsumedMetadata(k.simpleName.orEmpty(), v)
         },
-        scopesMetadata = allMetadata.map { (scope, metadata) ->
+        scopesMetadata = activeMetadata.map { (scope, metadata) ->
             ScopeMetadata(
                 name = scope,
                 description = metadata.description,

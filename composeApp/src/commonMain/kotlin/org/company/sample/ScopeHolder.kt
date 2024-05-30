@@ -59,6 +59,7 @@ val startScreenWidget by widget<String> { it, modifier ->
         LocalScope.current.eventBus.metadata.forEach {
             Text(it.toString())
         }
+        LocalScope.current + Global
         Button(onClick = { holder + SecondScreen(mapOf(String::class to { "Hello world" })) }) {
             Text("Click")
         }
@@ -95,11 +96,11 @@ fun provideScopeHolder() = scopeHolder {
 
     scope("StartScreen", ::provideStartScreenScope) dependsOn "Counter"
 
-    scopeEmbedded("Global") {
+    scopeEmbedded("Global") { params ->
         config {
             createEventBus {
                 watcher {
-                    Logger.d("GLOBAL") { it.toString() }
+                    Logger.d("GLOBAL") { "${params.resolve<String>()}: $it" }
                 }
             }
         }
@@ -173,7 +174,13 @@ fun provideScopeHolder() = scopeHolder {
                 ) {
                     Text(this@content.resolve<String>())
                     val holder = LocalScopeHolder.current
-                    Button(onClick = { holder + PopUp }) { Text("Click") }
+                    Button(
+                        onClick = {
+                            holder + PopUp
+                        }
+                    ) {
+                        Text("Click")
+                    }
                 }
             }
         }
