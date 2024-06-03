@@ -27,8 +27,10 @@ import ru.alexey.event.threads.navgraph.PopUp
 import ru.alexey.event.threads.navgraph.navGraph
 import ru.alexey.event.threads.navgraph.widget
 import ru.alexey.event.threads.resources.Parameters
+import ru.alexey.event.threads.resources.flowResource
 import ru.alexey.event.threads.resources.invoke
 import ru.alexey.event.threads.resources.observable
+import ru.alexey.event.threads.resources.param
 import ru.alexey.event.threads.resources.resolve
 import ru.alexey.event.threads.resources.resource
 import ru.alexey.event.threads.resources.valueResource
@@ -195,3 +197,31 @@ data object StartScreen : OuterNavigationDestination
 data class SecondScreen(
     override val params: Parameters
 ) : OuterNavigationDestination
+
+
+data class Update(val newValue: Int) : StrictEvent
+
+val text by observable<Int> {
+    flowResource(it.resolve<Int>())
+}
+
+fun provideScopeHolderTest() = scopeHolder {
+    scopeEmbedded("First") { scopeParams ->
+
+
+        val dc by datacontainer(text {
+            param<Int> {
+                scopeParams[Int::class]?.invoke() as Int? ?: 12
+            }
+        }) {
+
+        }
+        threads {
+            thread<Update> {
+
+            }.then(dc) { _, event ->
+                event.newValue
+            }
+        }
+    }
+}

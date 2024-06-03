@@ -10,7 +10,7 @@ import ru.alexey.event.threads.scopeholder.ScopeHolder
 import kotlin.reflect.KClass
 
 @Composable
-fun scopeWithParams(
+fun scope(
     name: String,
     parameters: Parameters? = null,
     scopeHolder: ScopeHolder? = null,
@@ -18,10 +18,11 @@ fun scopeWithParams(
 ) {
     val holder = scopeHolder ?: LocalScopeHolder.current
     val counter = LocalScopeCounter.current
+    val saver = LocalStateSaver.current
 
     val scope = remember {
         holder.findOrLoad(name) {
-            parameters ?: emptyMap()
+            (parameters ?: emptyMap()) + saver.savedParams
         }
     }
 
@@ -42,7 +43,7 @@ fun scopeWithParams(
     }
 }
 
-@Composable
+/*@Composable
 fun scope(name: String, scopeHolder: ScopeHolder? = null, content: @Composable () -> Unit) {
     val holder = scopeHolder ?: LocalScopeHolder.current
     val counter = LocalScopeCounter.current
@@ -66,13 +67,14 @@ fun scope(name: String, scopeHolder: ScopeHolder? = null, content: @Composable (
     CompositionLocalProvider(LocalScope provides  scope) {
         content()
     }
-}
+}*/
 
 @Composable
 fun ScopeHolder(block: () -> ScopeHolder, content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalScopeHolder provides block(),
-        LocalScopeCounter provides ScopeCounter(mutableMapOf())
+        LocalScopeCounter provides ScopeCounter(mutableMapOf()),
+        LocalStateSaver provides DefaultStateSaver()
     ) {
         content()
     }
