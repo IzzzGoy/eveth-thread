@@ -19,7 +19,6 @@ import kotlin.reflect.KClass
 class ContainerBuilder {
     private val containers: MutableMap<KClass<out Any>, Datacontainer<out Any>>
             = mutableMapOf()
-    val mutex = Mutex(true)
 
     operator fun<T: Any> set(kClass: KClass<T>, container: Datacontainer<T>) {
         containers[kClass] = container
@@ -27,7 +26,7 @@ class ContainerBuilder {
     operator fun<T: Any> get(kClass: KClass<T>): Datacontainer<T>?
         = containers[kClass] as? Datacontainer<T>
 
-    @Builder
+    /*@Builder
     inline fun <reified T : Any> container(initial: T) {
         val innerFlow = MutableStateFlow(initial)
 
@@ -102,16 +101,14 @@ class ContainerBuilder {
                 source.update(it)
             }
         }
-    }
-
-
+    }*/
 }
 
 
 inline fun<reified T: Any> ScopeBuilder.datacontainer(
     source: ObservableResource<T>,
     crossinline block: DatacontainerBuilder<T>.() -> Unit
-) = ReadOnlyProperty<Any?, Datacontainer<T>> { thisRef, property ->
+) = ReadOnlyProperty<ScopeBuilder?, Datacontainer<T>> { thisRef, property ->
     val container = containerBuilder[T::class]
     if (container == null) {
         var transforms: List<Transform<out Any, T>>
@@ -134,41 +131,6 @@ inline fun<reified T: Any> ScopeBuilder.datacontainer(
         container
     }
 }
-
-
-inline fun <reified T : Any> ScopeBuilder.datacontainer(
-    key: DatacontainerKey<T>,
-    crossinline block: DatacontainerBuilder<T>.() -> Unit
-) = ReadOnlyProperty<Any?, Datacontainer<T>> { _, _ ->
-    val container = containerBuilder[key.keyKClass]
-    if (container == null) {
-        var transforms: List<Transform<out Any, T>>
-        var scope: CoroutineScope
-        var watchers: List<(T) -> Unit>
-
-        DatacontainerBuilder(key.keyKClass).apply { block() }.build().also {
-            transforms = it.transforms
-            scope = it.coroutineScope
-            watchers = it.watchers
-        }
-        with(containerBuilder) {
-            realDataContainer(
-                transforms.foldAndStateWithProxyAndWatchers(
-                    key.source,
-                    watchers,
-                    scope
-                ), scope
-            ) { it: (T) -> T ->
-                scope.launch {
-                    key.source.update(it)
-                }
-            }
-        }
-    } else {
-        container
-    }
-}
-
 
 data class Transform<Other : Any, T : Any>(
     val other: () -> Flow<Other>,
@@ -210,13 +172,12 @@ class DatacontainerBuilder<T : Any>(private val clazz: KClass<T>) {
         watchers.add(watcher)
     }
 
-
+    @Deprecated("Replaced by new dc definition syntax", ReplaceWith("transform(otherDC, block)"))
     fun <Other : Any>ContainerBuilder.transform(clazz: KClass<Other>, block: suspend (Other, T) -> T) {
         val cb = this
         val t = Transform(
             other = {
                 flow {
-                    mutex.withLock {}
                     cb[clazz]?.let {
                         emitAll(it)
                     }
@@ -227,6 +188,7 @@ class DatacontainerBuilder<T : Any>(private val clazz: KClass<T>) {
         transforms.add(t)
     }
 
+    @Deprecated("Replaced by new dc definition syntax", ReplaceWith("transform(otherDC, block)"))
     @Builder
     inline fun <reified Other : Any> ContainerBuilder.transform(noinline block: suspend (Other, T) -> T) {
         transform(Other::class, block)

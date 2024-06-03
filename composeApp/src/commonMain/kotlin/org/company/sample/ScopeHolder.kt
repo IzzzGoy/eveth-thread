@@ -34,6 +34,7 @@ import ru.alexey.event.threads.resources.param
 import ru.alexey.event.threads.resources.resolve
 import ru.alexey.event.threads.resources.resource
 import ru.alexey.event.threads.resources.valueResource
+import ru.alexey.event.threads.scopeBuilder
 import ru.alexey.event.threads.scopeholder.scopeHolder
 import kotlin.random.Random
 
@@ -209,12 +210,20 @@ fun provideScopeHolderTest() = scopeHolder {
     scopeEmbedded("First") { scopeParams ->
 
 
+        val dc1 by datacontainer(
+            text { 13 }
+        ) {
+
+        }
+
         val dc by datacontainer(text {
             param<Int> {
                 scopeParams[Int::class]?.invoke() as Int? ?: 12
             }
         }) {
-
+            transform(dc1) { it, d ->
+                d
+            }
         }
         threads {
             thread<Update> {
@@ -222,6 +231,12 @@ fun provideScopeHolderTest() = scopeHolder {
             }.then(dc) { _, event ->
                 event.newValue
             }
+        }
+    }
+
+    scope("Test") { name ->
+        scopeBuilder(name) {
+
         }
     }
 }

@@ -38,8 +38,6 @@ class ScopeBuilder(
                             }
                             emitters = emittersBuilder.build(this)
                         }
-                    }.apply {
-                        containerBuilder.mutex.unlock()
                     }
                 }
             }
@@ -52,11 +50,6 @@ class ScopeBuilder(
     @Builder
     fun config(block: ConfigBuilder.() -> Unit) {
         configs = block
-    }
-
-    @Builder
-    fun containers(block: ContainerBuilder.() -> Unit) {
-        containerBuilder.apply(block)
     }
 
     @Builder

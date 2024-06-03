@@ -23,16 +23,18 @@ class ScopeHolder(
             it(params()).scope
         }?.also { scope ->
             active += scope
-            scope.eventBus.external<Event> { event ->
-                external[event::class]
-                    ?.filter { it != scope.key }
-                    ?.forEach { key ->
+            /*scope.eventBus.external<Event> { event ->
+                external
+                    .filter { it.key.isInstance(event) }
+                    .flatMap { it.value }
+                    .filter { it != scope.key }
+                    .forEach { key ->
                         active
                             .filter { it.key == key }
                             .forEach { it + event }
                     }
-            }
-            /*external.forEach { (k, receivers) ->
+            }*/
+            external.forEach { (k, receivers) ->
                 scope.eventBus.external(k) { event ->
                     active.filter { s ->
                         s.key in receivers && scope.key !in receivers
@@ -40,7 +42,7 @@ class ScopeHolder(
                         it + event
                     }
                 }
-            }*/
+            }
         }?.also {
             dependencies[it.key]?.forEach(::findOrLoad)
         }
