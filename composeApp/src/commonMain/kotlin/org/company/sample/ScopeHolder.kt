@@ -32,6 +32,7 @@ import ru.alexey.event.threads.resources.invoke
 import ru.alexey.event.threads.resources.observable
 import ru.alexey.event.threads.resources.param
 import ru.alexey.event.threads.resources.resolve
+import ru.alexey.event.threads.resources.resolveOrDefault
 import ru.alexey.event.threads.resources.resource
 import ru.alexey.event.threads.resources.valueResource
 import ru.alexey.event.threads.scopeBuilder
@@ -119,14 +120,14 @@ fun provideScopeHolder() = scopeHolder {
         }
 
 
-        val intContainer by datacontainer(intDCKey) {
-            coroutineScope {
-                CoroutineScope(Dispatchers.Main)
-            }
-            watcher {
-                Logger.d("STATE_CONTAINER") { it }
-            }
-        }
+        /* val intContainer by datacontainer(intDCKey) {
+             coroutineScope {
+                 CoroutineScope(Dispatchers.Main)
+             }
+             watcher {
+                 Logger.d("STATE_CONTAINER") { it }
+             }
+         }*/
 
         emitters {
             emitter {
@@ -147,9 +148,9 @@ fun provideScopeHolder() = scopeHolder {
                 description {
                     "Just set string dude :)"
                 }
-            }.then(intContainer) { _: String, setString: SetString ->
+            }/*.then(intContainer) { _: String, setString: SetString ->
                 setString.str
-            }
+            }*/
         }
     }
 
@@ -211,14 +212,14 @@ fun provideScopeHolderTest() = scopeHolder {
 
 
         val dc1 by datacontainer(
-            text { 13 }
+            text<Int> { param { 13 } }
         ) {
 
         }
 
         val dc by datacontainer(text {
             param<Int> {
-                scopeParams[Int::class]?.invoke() as Int? ?: 12
+                scopeParams.resolveOrDefault(12)
             }
         }) {
             transform(dc1) { it, d ->

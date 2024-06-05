@@ -27,6 +27,14 @@ inline fun <reified T : Any> Parameters.resolve(): T {
         ?: error("Param type <${T::class.simpleName}> missing") //error("Param type <${T::class.qualifiedName}> missing")
 }
 
+inline fun <reified T : Any> Parameters.resolveOrNull(): T? {
+    return get(T::class)?.let { it() as T }
+}
+
+inline fun <reified T : Any> Parameters.resolveOrDefault(default: T): T {
+    return get(T::class)?.let { it() as? T } ?: default
+}
+
 inline fun <reified T : Any> MutableMap<KClass<out Any>, () -> Any>.param(noinline block: () -> T) {
     put(T::class, block)
 }

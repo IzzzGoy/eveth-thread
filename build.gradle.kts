@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.serialization) apply false
 }
 
-version = "1.0.0-alpha10"
+version = "1.0.0-alpha11"
 group = "io.github.izzzgoy"
 
 repositories {
