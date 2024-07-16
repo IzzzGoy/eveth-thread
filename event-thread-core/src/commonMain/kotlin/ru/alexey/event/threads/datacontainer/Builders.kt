@@ -20,88 +20,18 @@ class ContainerBuilder {
     private val containers: MutableMap<KClass<out Any>, Datacontainer<out Any>>
             = mutableMapOf()
 
+    val containersEntries: Map<KClass<out Any>, Datacontainer<out Any>>
+        get() = containers
+
     operator fun<T: Any> set(kClass: KClass<T>, container: Datacontainer<T>) {
         containers[kClass] = container
     }
     operator fun<T: Any> get(kClass: KClass<T>): Datacontainer<T>?
         = containers[kClass] as? Datacontainer<T>
 
-    /*@Builder
-    inline fun <reified T : Any> container(initial: T) {
-        val innerFlow = MutableStateFlow(initial)
-
-        this[T::class] = object : RealDataContainer<T>(innerFlow) {
-            override suspend fun update(block: (T) -> T) {
-                innerFlow.update(block)
-            }
-        } as Datacontainer<T>
+    fun apply(entries: Map<KClass<out Any>, Datacontainer<out Any>>) {
+        containers.putAll(entries)
     }
-
-    @Builder
-    inline fun <reified T : Any> container(initial: T, block: DatacontainerBuilder<T>.() -> Unit) {
-
-        val proxy: ObservableResource<T> = flowResource(initial)
-        var transforms: List<Transform<out Any, T>>
-        var scope: CoroutineScope
-        var watchers: List<(T) -> Unit>
-
-        DatacontainerBuilder(T::class).apply(block).build().also {
-            transforms = it.transforms
-            scope = it.coroutineScope
-            watchers = it.watchers
-        }
-
-        realDataContainer(
-            flow = transforms.foldAndStateWithProxyAndWatchers(proxy, watchers, scope),
-            scope = scope
-        ) {
-            scope.launch {
-                proxy.update(it)
-            }
-        }
-    }
-
-    @Builder
-    inline fun <reified T : Any> container(block: DatacontainerBuilder<T>.() -> Unit) {
-
-        var proxy: ObservableResource<T>
-        var transforms: List<Transform<out Any, T>>
-        var scope: CoroutineScope
-        var watchers = listOf<(T) -> Unit>()
-
-        //(resource(T::class) as? ObservableResource<T>)?.also { proxy = it }
-
-        DatacontainerBuilder(T::class).apply { block() }.build().also {
-            proxy = it.proxy ?: error("Set observable resource of type <${T::class.simpleName}> or initial value")
-            transforms = it.transforms
-            scope = it.coroutineScope
-            watchers = it.watchers
-        }
-
-        realDataContainer(transforms.foldAndStateWithProxyAndWatchers(proxy, watchers, scope), scope) { it: (T) -> T ->
-            scope.launch {
-                proxy.update(it)
-            }
-        }
-    }
-
-    inline fun<reified T: Any> container(source: ObservableResource<T>, block: DatacontainerBuilder<T>.() -> Unit) {
-        var transforms: List<Transform<out Any, T>>
-        var scope: CoroutineScope
-        var watchers: List<(T) -> Unit>
-
-        DatacontainerBuilder(T::class).apply { block() }.build().also {
-            transforms = it.transforms
-            scope = it.coroutineScope
-            watchers = it.watchers
-        }
-
-        realDataContainer(transforms.foldAndStateWithProxyAndWatchers(source, watchers, scope), scope) { it: (T) -> T ->
-            scope.launch {
-                source.update(it)
-            }
-        }
-    }*/
 }
 
 
@@ -130,6 +60,10 @@ inline fun<reified T: Any> ScopeBuilder.datacontainer(
     }  else {
         container
     }
+}
+
+inline fun<reified T: Any> ScopeBuilder.parent() = ReadOnlyProperty<ScopeBuilder?, Datacontainer<T>>  { thisRef, property ->
+    containerBuilder[T::class] ?: throw Exception("Container with type ${T::class.simpleName} can`t be inherited")
 }
 
 data class Transform<Other : Any, T : Any>(

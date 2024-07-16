@@ -8,6 +8,7 @@ import ru.alexey.event.threads.datacontainer.DatacontainerKey
 import ru.alexey.event.threads.emitter.Emitter
 import ru.alexey.event.threads.emitter.EmittersBuilder
 import ru.alexey.event.threads.resources.Parameters
+import ru.alexey.event.threads.scopeholder.ScopeHolder
 import kotlin.random.Random
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
@@ -15,7 +16,6 @@ import kotlin.reflect.KProperty
 class ScopeBuilder(
     private var name: String,
 ) {
-
 
     val scope: Scope
             by lazy {
@@ -65,6 +65,11 @@ class ScopeBuilder(
     @Builder
     fun emitters(block: EmittersBuilder.() -> Unit) {
         emittersBuilder.apply(block)
+    }
+
+    fun apply(scopeBuilder: ScopeBuilder) {
+        applied += scopeBuilder.applied
+        containerBuilder.apply(scopeBuilder.containerBuilder.containersEntries)
     }
 }
 

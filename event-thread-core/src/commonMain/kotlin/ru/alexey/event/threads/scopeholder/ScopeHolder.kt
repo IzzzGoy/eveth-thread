@@ -11,6 +11,7 @@ class ScopeHolder(
     val external: Map<KClass<out Event>, List<String>>,
     private val factories: Map<String, (Parameters) -> ScopeBuilder>,
     val dependencies: Map<String, List<String>> = emptyMap(),
+    private val implementations: Map<String, List<String>> = emptyMap()
 ) {
 
     private val active: MutableSet<Scope> = mutableSetOf()
@@ -20,20 +21,14 @@ class ScopeHolder(
 
     private fun loadInternal(key: String, params: () -> Parameters = ::emptyMap): Scope? {
         return factories[key]?.let {
-            it(params()).scope
+            val scope = it(params())
+            implementations.getOrElse(key, ::emptyList).forEach {
+                factories[it]?.invoke(params())?.let(scope::apply)
+            }
+            //it(params()).scope
+            scope.scope
         }?.also { scope ->
             active += scope
-            /*scope.eventBus.external<Event> { event ->
-                external
-                    .filter { it.key.isInstance(event) }
-                    .flatMap { it.value }
-                    .filter { it != scope.key }
-                    .forEach { key ->
-                        active
-                            .filter { it.key == key }
-                            .forEach { it + event }
-                    }
-            }*/
             external.forEach { (k, receivers) ->
                 scope.eventBus.external(k) { event ->
                     active.filter { s ->

@@ -88,7 +88,12 @@ class EventBus(
     }
 
     operator fun<T> invoke(clazz: KClass<T>, action: () -> EventThread<T>) where T: Event {
-        subscribers[clazz] = action()
+        val thread = action()
+        if (thread.eventMetadatas.metadata.override || subscribers[clazz] == null) {
+            subscribers[clazz] = thread
+        } else {
+            subscribers[clazz]?.plus(thread.actions)
+        }
     }
 
     inline operator fun<reified T> invoke(noinline action: () -> EventThread<T>) where T: Any, T: Event {

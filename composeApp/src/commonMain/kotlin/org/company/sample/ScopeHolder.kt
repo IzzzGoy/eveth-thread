@@ -22,6 +22,7 @@ import ru.alexey.event.threads.StrictEvent
 import ru.alexey.event.threads.cache.cacheJsonResource
 import ru.alexey.event.threads.datacontainer.datacontainer
 import ru.alexey.event.threads.datacontainer.datacontainerKey
+import ru.alexey.event.threads.datacontainer.parent
 import ru.alexey.event.threads.navgraph.NavigationDestination
 import ru.alexey.event.threads.navgraph.PopUp
 import ru.alexey.event.threads.navgraph.navGraph
@@ -207,15 +208,22 @@ val text by observable<Int> {
     flowResource(it.resolve<Int>())
 }
 
+val text2 by observable<String> {
+    flowResource("")
+}
+
 fun provideScopeHolderTest() = scopeHolder {
+
+    "First" implements "Parent"
+
     scopeEmbedded("First") { scopeParams ->
-
-
         val dc1 by datacontainer(
             text<Int> { param { 13 } }
         ) {
 
         }
+
+        val dc2 by parent<String>()
 
         val dc by datacontainer(text {
             param<Int> {
@@ -226,12 +234,27 @@ fun provideScopeHolderTest() = scopeHolder {
                 d
             }
         }
+
+
+
         threads {
             thread<Update> {
 
             }.then(dc) { _, event ->
                 event.newValue
+            }.then(dc2) { _, event ->
+                event.newValue.toString()
             }
+        }
+    }
+    scopeEmbedded("Parent") {
+        val t2 by datacontainer(text2()) {
+
+        }
+        t2.value
+
+        threads {
+            thread<Counter>()
         }
     }
 

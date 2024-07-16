@@ -12,6 +12,7 @@ class ScopeHolderBuilder {
     private val factories: MutableMap<String, (Parameters) -> ScopeBuilder> = mutableMapOf()
     private val external: MutableMap<KClass<out Event>, List<String>> = mutableMapOf()
     private val dependencies: MutableMap<String, List<String>> = mutableMapOf()
+    private val implementations: MutableMap<String, List<String>> = mutableMapOf()
 
     fun scope(key: String, block: (String, Parameters) -> ScopeBuilder): String {
         factories[key] = {
@@ -37,6 +38,7 @@ class ScopeHolderBuilder {
             external = external,
             factories = factories,
             dependencies = dependencies,
+            implementations = implementations
         )
     }
 
@@ -72,6 +74,18 @@ class ScopeHolderBuilder {
 
     infix fun String.dependsOn(keys: () -> List<String>) {
         dependencies[this] = keys()
+    }
+
+    infix fun String.implements(key: String) {
+        implementations[this] = listOf(key)
+    }
+
+    infix fun String.implements(key: List<String>) {
+        implementations[this] = key
+    }
+
+    infix fun String.implements(keys: () -> List<String>) {
+        implementations[this] = keys()
     }
 }
 

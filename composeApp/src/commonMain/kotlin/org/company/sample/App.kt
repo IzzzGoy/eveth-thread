@@ -45,24 +45,6 @@ val startWidget = createWidget<Int>("StartScreen") { it, modifier ->
 @Composable
 internal fun App() = AppTheme {
     ScopeHolder(::provideScopeHolderTest) {
-        /*LocalScopeHolder.current.generateStaticSchema().also {
-            Logger.a("SCHEMA_STATIC") {
-                jsonResource()().encodeToString(
-                    it
-                )
-            }
-        }
-        LocalScopeHolder.current.generateActiveSchema().also {
-            Logger.a("SCHEMA_ACTIVE") {
-                jsonResource()().encodeToString(
-                    it
-                )
-            }
-        }
-        scopeWithParams("Global", mapOf(String::class to { "Hello" })) {
-
-        }
-        NavGraph("Navigation")*/
         var screen by remember {
             mutableIntStateOf(1)
         }
@@ -80,6 +62,9 @@ internal fun App() = AppTheme {
                             screen = 2
                         }
                         Text(it.toString())
+                    }
+                    widget(String::class) {
+                        Text(it, modifier = Modifier.align(Alignment.BottomCenter))
                     }
                 }
             } else {

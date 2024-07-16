@@ -19,6 +19,10 @@ open class EventThread<T: Event>(
             eventThreadAction
         )
     }
+
+    operator fun plus(actions: List<suspend (Event) -> Unit>) {
+        eventThreadActions + actions
+    }
 }
 
 @Serializable
@@ -43,12 +47,14 @@ class EventThreadAction<T: Event>(
 @Serializable
 data class EventMetadata(
     val description: String,
-    val privacy: Privacy = Privacy.public
+    val privacy: Privacy = Privacy.public,
+    val override: Boolean = false,
 )
 
 class EventThreadMetadataBuilder<T: Event>(
     private var description: String = "",
-    private var privacy: Privacy = Privacy.public
+    private var privacy: Privacy = Privacy.public,
+    private var override: Boolean = false,
 ): Builder<EventThread<T>> {
 
 
@@ -56,7 +62,7 @@ class EventThreadMetadataBuilder<T: Event>(
     override fun build(): EventThread<T> {
         return EventThread<T>(
             EventMetadata(
-                description, privacy
+                description, privacy, override
             )
         )
     }
@@ -68,6 +74,8 @@ class EventThreadMetadataBuilder<T: Event>(
     fun privacy(privacy: Privacy) {
         this.privacy = privacy
     }
+
+    fun override(override: Boolean) { this.override = override }
 }
 
 class EventThreadActionBuilder<T: Event>(
