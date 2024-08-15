@@ -9,29 +9,25 @@ import kotlin.reflect.KClass
 
 class ScopeHolderBuilder {
 
-    private val factories: MutableMap<String, (Parameters) -> ScopeBuilder> = mutableMapOf()
+    private val factories: MutableMap<String, (Parameters, List<ScopeBuilder>) -> ScopeBuilder> = mutableMapOf()
     private val external: MutableMap<KClass<out Event>, List<String>> = mutableMapOf()
     private val dependencies: MutableMap<String, List<String>> = mutableMapOf()
     private val implementations: MutableMap<String, List<String>> = mutableMapOf()
 
-    fun scope(key: String, block: (String, Parameters) -> ScopeBuilder): String {
-        factories[key] = {
-            block(key, it)
+    /*fun scope(key: String, block: (String, Parameters) -> ScopeBuilder): String {
+        factories[key] = { params, parents ->
+            block(key, params)
         }
-        return key
-    }
-
-    fun scope(key: String, block: (String) -> ((Parameters) -> ScopeBuilder)): String {
-        factories[key] = {
-            block(key)(it)
-        }
-        return key
-    }
-
-    /*fun scopeWithParams(key: String, block: (Parameters) -> ScopeBuilder) : String {
-        factories[key] = block
         return key
     }*/
+
+    fun scope(key: String, block: (String, List<ScopeBuilder>) -> ((Parameters) -> ScopeBuilder)): String {
+        factories[key] = { params, parents ->
+            block(key, parents)(params)
+        }
+        return key
+    }
+
 
     fun build(): ScopeHolder {
         return ScopeHolder(
@@ -43,8 +39,8 @@ class ScopeHolderBuilder {
     }
 
     fun scopeEmbedded(key: String, init: ScopeBuilder.(Parameters) -> Unit) {
-        factories[key] = scopeBuilder(key) {
-            init(it)
+        factories[key] = { params, parents ->
+            ScopeBuilder(key, parents).apply { init(params) }
         }
     }
 

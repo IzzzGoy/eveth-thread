@@ -15,12 +15,18 @@ import kotlin.reflect.KProperty
 
 class ScopeBuilder(
     private var name: String,
+    private var parents: List<ScopeBuilder> = emptyList()
 ) {
-
+    private var configs: ConfigBuilder.() -> Unit = {}
+    val containerBuilder = ContainerBuilder()
+    private val applied = mutableListOf<Scope.() -> Unit>()
+    private val emittersBuilder = EmittersBuilder()
+    init {
+        parents.forEach(::apply)
+    }
     val scope: Scope
             by lazy {
                 with(ConfigBuilder()){
-
                     configs()
 
                     object : Scope() {
@@ -42,10 +48,7 @@ class ScopeBuilder(
                 }
             }
 
-    private var configs: ConfigBuilder.() -> Unit = {}
-    val containerBuilder = ContainerBuilder()
-    private val applied = mutableListOf<Scope.() -> Unit>()
-    private val emittersBuilder = EmittersBuilder()
+
 
     @Builder
     fun config(block: ConfigBuilder.() -> Unit) {
@@ -180,18 +183,21 @@ abstract class Scope : KeyHolder {
 @Builder
 inline fun scopeBuilder(
     keyHolder: KeyHolder? = null,
+    parents: List<ScopeBuilder> = emptyList(),
     noinline block: ScopeBuilder.(Parameters) -> Unit
 ): (Parameters) -> ScopeBuilder =
-    scopeBuilder(keyHolder?.key, block)
+    scopeBuilder(keyHolder?.key, parents, block)
 
 @Builder
 fun scopeBuilder(
     name: String? = null,
+    parents: List<ScopeBuilder> = emptyList(),
     block: ScopeBuilder.(Parameters) -> Unit
 ): (Parameters) -> ScopeBuilder {
     return {
         ScopeBuilder(
-            name ?: Random.nextBytes(132).toString()
+            name ?: Random.nextBytes(132).toString(),
+            parents
         ).apply { block(it) }
     }
 }

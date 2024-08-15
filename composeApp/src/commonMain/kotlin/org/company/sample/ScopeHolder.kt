@@ -71,7 +71,7 @@ val startScreenWidget by widget<String> { it, modifier ->
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
+/*@OptIn(ExperimentalStdlibApi::class)
 fun provideScopeHolder() = scopeHolder {
 
     Global::class consume "Global"
@@ -121,14 +121,14 @@ fun provideScopeHolder() = scopeHolder {
         }
 
 
-        /* val intContainer by datacontainer(intDCKey) {
+        *//* val intContainer by datacontainer(intDCKey) {
              coroutineScope {
                  CoroutineScope(Dispatchers.Main)
              }
              watcher {
                  Logger.d("STATE_CONTAINER") { it }
              }
-         }*/
+         }*//*
 
         emitters {
             emitter {
@@ -149,9 +149,9 @@ fun provideScopeHolder() = scopeHolder {
                 description {
                     "Just set string dude :)"
                 }
-            }/*.then(intContainer) { _: String, setString: SetString ->
+            }*//*.then(intContainer) { _: String, setString: SetString ->
                 setString.str
-            }*/
+            }*//*
         }
     }
 
@@ -190,7 +190,7 @@ fun provideScopeHolder() = scopeHolder {
             }
         }
     }
-}
+}*/
 
 
 sealed interface OuterNavigationDestination : NavigationDestination
@@ -215,6 +215,7 @@ val text2 by observable<String> {
 fun provideScopeHolderTest() = scopeHolder {
 
     "First" implements "Parent"
+    "Test" implements "Parent"
 
     scopeEmbedded("First") { scopeParams ->
         val dc1 by datacontainer(
@@ -231,6 +232,10 @@ fun provideScopeHolderTest() = scopeHolder {
             }
         }) {
             transform(dc1) { it, d ->
+                d
+            }
+            transform(dc2) { it, d ->
+                Logger.d("SUCESS") { it }
                 d
             }
         }
@@ -258,9 +263,15 @@ fun provideScopeHolderTest() = scopeHolder {
         }
     }
 
-    scope("Test") { name ->
-        scopeBuilder(name) {
-
+    scope("Test") { name, parents ->
+        scopeBuilder(name = name, parents = parents) {
+            val dc2 by parent<String>()
+            val dc by datacontainer(text { param { 13 } } ) {
+                transform(dc2) { t, i ->
+                    i + t.length
+                }
+            }
+            dc.value
         }
     }
 }

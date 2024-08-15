@@ -9,7 +9,7 @@ import kotlin.reflect.typeOf
 
 class ScopeHolder(
     val external: Map<KClass<out Event>, List<String>>,
-    private val factories: Map<String, (Parameters) -> ScopeBuilder>,
+    private val factories: Map<String, (Parameters, List<ScopeBuilder>) -> ScopeBuilder>,
     val dependencies: Map<String, List<String>> = emptyMap(),
     private val implementations: Map<String, List<String>> = emptyMap()
 ) {
@@ -19,12 +19,16 @@ class ScopeHolder(
     val activeMetadata
         get() = active.associate { it.key to it.metadata }
 
+    private fun getAllDeps(key: String, params: () -> Parameters): List<ScopeBuilder> {
+        return implementations.getOrElse(key, ::emptyList).mapNotNull {
+            factories[it]?.invoke(params(), getAllDeps(it, params))
+        }
+    }
+
     private fun loadInternal(key: String, params: () -> Parameters = ::emptyMap): Scope? {
         return factories[key]?.let {
-            val scope = it(params())
-            implementations.getOrElse(key, ::emptyList).forEach {
-                factories[it]?.invoke(params())?.let(scope::apply)
-            }
+            val scope = it(params(), getAllDeps(key, params))
+
             //it(params()).scope
             scope.scope
         }?.also { scope ->
@@ -56,7 +60,7 @@ class ScopeHolder(
     }
 
     infix fun free(keyHolder: KeyHolder) {
-       free(keyHolder.key)
+        free(keyHolder.key)
     }
 
     infix fun free(key: String) {
@@ -96,7 +100,9 @@ class ScopeHolder(
     }
 
     infix fun find(key: String): Scope? = active.find { it.key == key }
-    infix fun findOrLoad(key: String): Scope = find(key) ?: load(key) ?: error("Scope with name: $key not found")
+    infix fun findOrLoad(key: String): Scope =
+        find(key) ?: load(key) ?: error("Scope with name: $key not found")
+
     fun findOrLoad(key: String, params: () -> Parameters): Scope =
         find(key) ?: load(key, params) ?: error("Scope with name: $key not found")
 }

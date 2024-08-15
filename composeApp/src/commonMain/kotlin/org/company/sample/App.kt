@@ -68,17 +68,21 @@ internal fun App() = AppTheme {
                     }
                 }
             } else {
-                LaunchedEffect(Unit) {
-                    delay(3_000)
-                    screen = 1
-                }
-                val localSaver = LocalStateSaver.current
-                TextButton(
-                    onClick = {
-                        localSaver.remove(Int::class)
+                scope("Test") {
+                    LaunchedEffect(Unit) {
+                        delay(3_000)
+                        screen = 1
                     }
-                ) {
-                    Text("Test")
+                    val localSaver = LocalStateSaver.current
+                    TextButton(
+                        onClick = {
+                            localSaver.remove(Int::class)
+                        }
+                    ) {
+                        widget(Int::class) {
+                            Text("Test - $it")
+                        }
+                    }
                 }
             }
         }
